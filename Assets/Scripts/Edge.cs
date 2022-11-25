@@ -4,31 +4,28 @@ namespace Graph
 {
     public class Edge
     {
-        private Vertex first;
-        private Vertex second;
-        private double distance;
+        public Vertex Source { get; private set; }
+        public Vertex Destination { get; private set; }
+        private double weight;
+        public double Weight => weight;
 
-        public Edge(Vertex first, Vertex second)
+        public Edge(Vertex Source, Vertex Destination)
         {
-            this.first = first;
-            this.second = second;
+            this.Source = Source;
+            this.Destination = Destination;
             CalculateDistance();
         }
 
         public Edge(Edge edge)
         {
-            this.first = edge.first;
-            this.second = edge.second;
-            this.distance = edge.distance;
+            this.Source = edge.Source;
+            this.Destination = edge.Destination;
+            this.weight = edge.weight;
         }
-
-        public Vertex GetFirst() { return first; }
-        public Vertex GetSecond() { return second; }
-        public double GetDistance() { return distance; }
 
         private void CalculateDistance()
         {
-            distance = Vector3.Distance(first.GetPosition(), second.GetPosition());
+            weight = Vector3.Distance(Source.Position, Destination.Position);
         }
     }
 }

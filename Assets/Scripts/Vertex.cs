@@ -5,34 +5,28 @@ namespace Graph
 {
     public class Vertex
     {
-        private Vector3Int position;
+        public Vector3Int Position { get; private set; }
         public int Index { get; private set; }
 
-        public void SetIndex(int value) { Index = value; }
+        public Vertex(Vector3Int Position) { this.Position = Position; }
 
-        public Vertex(Vector3Int position)
+        public Vertex(Vertex vertex)
         {
-            this.position = position;
-        }
-
-        public Vertex(Vertex vertex) 
-        { 
-            this.position = vertex.position;
+            this.Position = vertex.Position;
             this.Index = vertex.Index;
         }
 
-        public Vector3Int GetPosition() { return position; }
+        public void SetIndex(int value) { Index = value; }
 
         public override bool Equals(object obj)
         {
             return obj is Vertex vertex &&
-                   position.Equals(vertex.position);
+                   Position.Equals(vertex.Position);
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(position);
+            return HashCode.Combine(Position);
         }
-
     }
 }

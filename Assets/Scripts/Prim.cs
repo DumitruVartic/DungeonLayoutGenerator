@@ -1,8 +1,6 @@
-using System;
-
 namespace Graph
 {
-    public class Prim // nefunctional
+    public class Prim // From one point priority
     {
         private static int MinKey(double[] key, bool[] mstSet, int verticesCount)
         {

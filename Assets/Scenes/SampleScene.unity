@@ -354,7 +354,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1648613848}
-  - component: {fileID: 1648613847}
+  - component: {fileID: 1648613849}
   m_Layer: 0
   m_Name: Generator
   m_TagString: Untagged
@@ -362,23 +362,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1648613847
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1648613846}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 43919b0c4bfdc8347a88e2b21ab8e4af, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  size: {x: 20, y: 3, z: 20}
-  roomCount: 20
-  roomMaxSize: {x: 6, y: 1, z: 6}
-  cubePrefab: {fileID: 8358301670455467717, guid: 966f2f666f5d5fb4291a91794b3b4a2e, type: 3}
-  roomMaterial: {fileID: 2100000, guid: dd941168f0c032b47a42d5657de32ef5, type: 2}
 --- !u!4 &1648613848
 Transform:
   m_ObjectHideFlags: 0
@@ -394,3 +377,22 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1648613849
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1648613846}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43919b0c4bfdc8347a88e2b21ab8e4af, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  size: {x: 20, y: 3, z: 20}
+  roomMaxSize: {x: 6, y: 1, z: 6}
+  roomCount: 20
+  duration: 10
+  cubePrefab: {fileID: 8358301670455467717, guid: 966f2f666f5d5fb4291a91794b3b4a2e, type: 3}
+  roomMaterial: {fileID: 2100000, guid: 18a9dc806ce5a0145979f1e13a573daf, type: 2}
+  toggleCubeRoom: 1
