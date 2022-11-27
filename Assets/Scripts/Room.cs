@@ -5,6 +5,8 @@ namespace Map
     public class Room
     {
         public BoundsInt bounds;
+        public int Index { get; private set; }
+        public void SetIndex(int value) { Index = value; }
 
         public Room(Vector3Int location, Vector3Int size)
         {

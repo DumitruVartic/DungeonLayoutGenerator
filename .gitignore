@@ -1,17 +1,18 @@
 # This .gitignore file should be placed at the root of your Unity project directory
 #
 # Get latest from https://github.com/github/gitignore/blob/master/Unity.gitignore
-#
-/[Ll]ibrary/*
+# /[Ll]ibrary/*
+/[Ll]ibrary/
 /[Tt]emp/
 /[Oo]bj/
 /[Bb]uild/
 /[Bb]uilds/
 /[Ll]ogs/
 /[Mm]emoryCaptures/
+/[Uu]serSettings/
 
 # Force include scene hierachy
-!/[Ll]ibrary/LastSceneManagerSetup.txt
+# !/[Ll]ibrary/LastSceneManagerSetup.txt
 
 # Asset meta data should only be ignored when the corresponding asset is also ignored
 !/[Aa]ssets/**/*.meta
@@ -45,6 +46,7 @@ ExportedObj/
 *.mdb
 *.opendb
 *.VC.db
+*.vsconfig
 
 # Unity3D generated meta files
 *.pidb.meta

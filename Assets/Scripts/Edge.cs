@@ -18,9 +18,9 @@ namespace Graph
 
         public Edge(Edge edge)
         {
-            this.Source = edge.Source;
-            this.Destination = edge.Destination;
-            this.weight = edge.weight;
+            Source = edge.Source;
+            Destination = edge.Destination;
+            weight = edge.weight;
         }
 
         private void CalculateDistance()

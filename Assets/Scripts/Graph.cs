@@ -1,34 +1,52 @@
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
+using Random = System.Random;
 
 namespace Graph
 {
     public class Graph
     {
+        private Random random;
         private static int verticesCount;
         private List<Edge> edges;
         private List<Vertex> vertices;
         private double[,] graph;
         private List<Edge> MST;
+        private HashSet<Edge> selectedEdges;
+        private double probabilityToSelect;
 
-        private void SetupData(List<Vertex> vertices)
+        public HashSet<Edge> GetSelectedEdges()
         {
+            if (selectedEdges != null)
+                return selectedEdges;
+            return new HashSet<Edge>(MST);
+        }
+
+        private void SetupData(List<Vertex> vertices, double probabilityToSelect, int randomSeed)
+        {
+            this.probabilityToSelect = probabilityToSelect;
+            random = new Random(randomSeed);
             edges = new List<Edge>();
             this.vertices = vertices;
             verticesCount = vertices.Count;
-            for (int i = 0; i < verticesCount; i++)
-                vertices[i].SetIndex(i);
             graph = new double[verticesCount, verticesCount];
             MST = new List<Edge>();
+            selectedEdges = null;
         }
 
-        public void CreateGraph(List<Vertex> vertices)
+        public void CreateGraph(List<Vertex> vertices, double probabilityToSelect, int randomSeed, bool addExtraEdges, Map.Generator.Alghoritm alghoritm)
         {
-            SetupData(vertices);
+            SetupData(vertices, probabilityToSelect, randomSeed);
             CreateEdges();
             CreateMatrix();
-            CreateMST(Prim.MST(graph, verticesCount));
-            AddSomeExtraEdges();
+            if (alghoritm == Map.Generator.Alghoritm.Kruskal)
+                MST = new List<Edge>(Kruskal.MST(edges, verticesCount));
+            else
+                CreateMST(Prim.MST(graph, verticesCount));
+
+            if (addExtraEdges)
+                AddSomeExtraEdges();
         }
 
         private void CreateEdges()
@@ -98,7 +116,13 @@ namespace Graph
 
         private void AddSomeExtraEdges()
         {
+            selectedEdges = new HashSet<Edge>(MST);
+            var remainingEdges = new HashSet<Edge>(edges);
+            remainingEdges.ExceptWith(selectedEdges);
 
+            foreach (var edge in remainingEdges)
+                if (random.NextDouble() < probabilityToSelect)
+                    selectedEdges.Add(edge);
         }
 
         // Methods for Debuging
@@ -107,6 +131,7 @@ namespace Graph
             Debug.Log("Vertices - " + vertices.Count);
             Debug.Log("Edges - " + edges.Count);
             Debug.Log("MST Edges - " + MST.Count);
+            Debug.Log("Selected Edges - " + selectedEdges.Count);
         }
 
         public void Clear()
@@ -129,6 +154,17 @@ namespace Graph
         public void ViewMST(int duration)
         {
             foreach (Edge edge in MST)
+            {
+                Vector3Int firstPosition = edge.Source.Position;
+                Vector3Int secondPosition = edge.Destination.Position;
+
+                Debug.DrawLine(firstPosition, secondPosition, Color.blue, duration);
+            }
+        }
+
+        public void ViewSelectedEdges(int duration)
+        {
+            foreach (Edge edge in selectedEdges)
             {
                 Vector3Int firstPosition = edge.Source.Position;
                 Vector3Int secondPosition = edge.Destination.Position;

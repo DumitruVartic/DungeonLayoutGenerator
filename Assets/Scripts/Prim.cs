@@ -1,6 +1,6 @@
 namespace Graph
 {
-    public class Prim // From one point priority
+    public class Prim
     {
         private static int MinKey(double[] key, bool[] mstSet, int verticesCount)
         {
