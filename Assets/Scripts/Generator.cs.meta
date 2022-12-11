@@ -5,9 +5,11 @@ MonoImporter:
   serializedVersion: 2
   defaultReferences:
   - cubePrefab: {fileID: 6865812693612053228, guid: cd363abb6d36e4b45a5a47545fb9057a, type: 3}
+  - entrencePrefab: {fileID: 12888139502737894, guid: d5e80342d3777f844affc266dcab570e, type: 3}
   - roomMaterial: {fileID: 2100000, guid: 18a9dc806ce5a0145979f1e13a573daf, type: 2}
   - hallwayMaterial: {fileID: 2100000, guid: 3cb46ab6bd9a20144a1436fa0f67b917, type: 2}
   - stairsMaterial: {fileID: 2100000, guid: dd941168f0c032b47a42d5657de32ef5, type: 2}
+  - test: {fileID: 2100000, guid: 5c358c6fab3d4af47a6ce10c1e06703a, type: 2}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

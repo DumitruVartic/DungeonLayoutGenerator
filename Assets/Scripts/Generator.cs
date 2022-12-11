@@ -1,31 +1,9 @@
 ﻿using Graph;
 using System;
 using System.Collections.Generic;
+using Unity.VisualScripting.Dependencies.Sqlite;
 using UnityEngine;
 using Random = System.Random;
-/*
- * de realizat vizualizarea la G cost, H cost, F cost in debug, (daca asa ceva e posibil)
- * cred ca astfel de vizualizare este posibila doar in step by step sau 
- * daca este doar 2 camere
- * de terminat metoda neighbours ce returneaza o structura? sao lista (de verificat ce va fi mai convenabil) cu vecinii sai
- * Refactoring :
- * de scos functiile ce nu trebuie sa se afle aici(si variabile)
- * (gen functiile de debug sa se afle in clasa aparte, si de chemat aici), 
- * variabile ce tin de graf de scos de asemeni, gen (probability to select.alghoritm etc)
- * Este nevoie oare de pus enum'urile sa fie aparte
- * addExtraEdges - se va  folosi obligatoriui
- * instantPathfinding deasemeni
- * toggle cube room slabe sanse, duration e doar pentru debug
- * dar cel mai probabil ca astea 3 ar trebui de scos in clasa debug (impreuna cu metodele pentr debug)
- * de facto, in clasa generator e nevoie doar de 3 variabile, size la grid, maxsize la room, roomCount
- * celelalte ar putea fi scoase pentr debug
- * metodele pentru debug din update din mutat in clasa debug, 
- * practic aceasta oricum se va numi Debug si va fi monobehavior
- * clasa seed
- * seedul ar putea fi facut ca clasa aparte
- * singura problema e cum el va avea acces la variabile pentru a le seta ?
- * 
- */
 
 namespace Map
 {
@@ -38,9 +16,6 @@ namespace Map
             Hallway,
             Stairs
         }
-
-        // https://stackoverflow.com/questions/70568157/cant-use-c-sharp-net-6-priorityqueue-in-unity?fbclid=IwAR3f7Fa2GfsJHlLH8AnWAm7rmSXeslAE8y2GnmK77zN_b47gxxW7DFAIPL8
-        // motivul adaugarii PriorityQueue
 
         public enum Alghoritm
         {
@@ -58,12 +33,16 @@ namespace Map
         [SerializeField] private double probabilityToSelect;
         [SerializeField] private Alghoritm alghoritm;
         [SerializeField] private bool toggleCubeRoom;
+        [SerializeField] private bool toggleEntrences;
         [SerializeField] private bool addExtraEdges;
         [SerializeField] private bool instantPathfindig;
         [SerializeField] private GameObject cubePrefab;
+        [SerializeField] private GameObject entrencePrefab;
+        [SerializeField] private GameObject staircasePrefab;
         [SerializeField] private Material roomMaterial;
         [SerializeField] private Material hallwayMaterial;
         [SerializeField] private Material stairsMaterial;
+        [SerializeField] private Material test;
 
         private void Reset()
         {
@@ -74,11 +53,12 @@ namespace Map
             randomSeed = 0;
             alghoritm = Alghoritm.Kruskal;
             toggleCubeRoom = true;
+            toggleEntrences = true;
             addExtraEdges = true;
             instantPathfindig = true;
             probabilityToSelect = 0.0125;
             seed = string.Empty;
-           
+
         }
 
         private Random random;
@@ -87,13 +67,7 @@ namespace Map
         private List<Room> rooms;
         private List<GameObject> objects;
         private HashSet<Edge> selectedEdges;
-        private List<Vector3Int> entries; 
-        /*
-         * entries - detine inceputul si sfirsutul la path
-         * dar acolo esste un if, probabil mai bine din el de luat primul si ultimul halleay
-         * iar din afara de luat inceputul si sfirsitul
-         * care probabil se afla in room sau altceva
-         */
+        private List<List<Vector3Int>> paths;
 
         private void Start()
         {
@@ -102,18 +76,7 @@ namespace Map
             graph = new Graph.Graph();
             rooms = new List<Room>();
             objects = new List<GameObject>();
-            entries = new List<Vector3Int>();
-
-            for (int i = 0; i < size.x; i++)
-            {
-                for (int j = 0; j < size.y; j++)
-                {
-                    for (int k = 0; k < size.z; k++)
-                    {
-                        grid[i, j, k] = CellType.None;
-                    }
-                }
-            }
+            paths = new List<List<Vector3Int>>();
 
             if (seed != string.Empty)
                 InputSeed();
@@ -142,6 +105,8 @@ namespace Map
             if (instantPathfindig)
                 Pathfind();
             RemovePrefabFaces();
+            CreateEntrances();
+            CreateStaircases();
         }
 
         private void CreateGraph()
@@ -253,17 +218,17 @@ namespace Map
             PlaceCube(location, size, "Room", roomMaterial);
         }
 
-        void PlaceHallway(Vector3Int location)
+        private void PlaceHallway(Vector3Int location)
         {
             PlaceCube(location, new Vector3Int(1, 1, 1), "Hallway", hallwayMaterial);
         }
 
-        void PlaceStairs(Vector3Int location)
+        private void PlaceStairs(Vector3Int location)
         {
             PlaceCube(location, new Vector3Int(1, 1, 1), "Stairs", stairsMaterial);
         }
 
-        void Pathfind()
+        private void Pathfind()
         {
             DungeonPathfinder3D aStar = new DungeonPathfinder3D(size);
 
@@ -381,16 +346,22 @@ namespace Map
 
                     foreach (var pos in path)
                     {
-                        if (grid[pos] == CellType.Hallway)
+                        if (grid[pos] == CellType.Hallway && isEmpty(pos))
                         {
                             PlaceHallway(pos);
                         }
                     }
-
-                    entries.Add(path[0]);
-                    entries.Add(path[path.Count - 1]);
+                    paths.Add(path);
                 }
             }
+        }
+
+        private bool isEmpty(Vector3Int position)
+        {
+            foreach (var gameObject in objects)
+                if (gameObject.transform.position == position)
+                    return false;
+            return true;
         }
 
         private void ResetData()
@@ -412,6 +383,9 @@ namespace Map
 
             random = new Random(randomSeed);
             randomSeed = random.Next();
+
+            paths.Clear();
+            paths = new List<List<Vector3Int>>();
         }
 
         private void InputSeed()
@@ -487,18 +461,160 @@ namespace Map
             }
         }
 
+        private void CreateStaircases()
+        {
+            foreach (var path in paths)
+            {
+                for (int i = 1; i < path.Count; i++)
+                {
+                    SetStaircaseByRotation(path[i], path[i - 1]);
+                }
+            }
+        }
+
+        private void SetStaircaseByRotation(Vector3Int current, Vector3Int prev)
+        {
+            Dictionary<Vector3Int, string> directions = new Dictionary<Vector3Int, string>()
+            {
+                {Vector3Int.right, "Right"},
+                {Vector3Int.left, "Left"},
+                {Vector3Int.forward, "Forward"},
+                {Vector3Int.back, "Back"}
+            };
+
+            Dictionary<string, (Vector3, Vector3)> positionRotation = new Dictionary<string, (Vector3, Vector3)>()
+            {
+                {"Right", (new Vector3(1, 0, 0), new Vector3(0, 90, 0))}, //
+                {"Left", (new Vector3(-1, 0, 0), new Vector3(0, -90, 0))},
+                {"Forward", (new Vector3(0, 0, 1), new Vector3(0, 0, 0))},
+                {"Back", (new Vector3(0, 0, -1), new Vector3(0, 180, 0))}, // 180
+            };
+
+            string direction;
+            Vector3Int delta;
+            if (current.y >= prev.y)
+                delta = current - prev;
+            else
+                delta = prev - current;
+
+            if (delta.y == 0)
+                return;
+
+            Vector3Int staircasePosition;
+            if (current.y > prev.y)
+                staircasePosition = prev;
+            else
+                staircasePosition = current;
+
+            int xDir = Mathf.Clamp(delta.x, -1, 1);
+            int zDir = Mathf.Clamp(delta.z, -1, 1); 
+            Vector3Int verticalOffset = new Vector3Int(0, delta.y, 0); // de eliminat
+            Vector3Int horizontalOffset = new Vector3Int(xDir, 0, zDir);
+
+            delta = (prev + horizontalOffset) - prev;
+            direction = directions[delta];
+
+            GameObject go = Instantiate(staircasePrefab, staircasePosition + horizontalOffset, Quaternion.identity);
+            go.GetComponent<Transform>().localPosition = staircasePosition + horizontalOffset + positionRotation[direction].Item1;
+            go.GetComponent<Transform>().localRotation = Quaternion.Euler(positionRotation[direction].Item2);
+            objects.Add(go);
+        }
+
+        private void CreateEntrances()
+        {
+            foreach (var path in paths)
+            {
+                for (int i = 1; i < path.Count; i++)
+                {
+                    ReplaceEntrence(path[i], path[i - 1]);
+                }
+            }
+        }
+
+        private void ReplaceEntrence(Vector3Int current, Vector3Int prev)
+        {
+            Dictionary<Vector3Int, string> directions = new Dictionary<Vector3Int, string>()
+            {
+                {Vector3Int.right, "Right"},
+                {Vector3Int.left, "Left"},
+                {Vector3Int.forward, "Forward"},
+                {Vector3Int.back, "Back"}
+            };
+
+            Dictionary<string, string> opositeDirection = new Dictionary<string, string>()
+            {
+                {"Right", "Left"},
+                {"Left", "Right"},
+                {"Forward", "Back"},
+                {"Back", "Forward"}
+            };
+
+            Dictionary<string, (Vector3, Vector3)> positionRotation = new Dictionary<string, (Vector3, Vector3)>()
+            {
+                {"Right", (new Vector3((float)0.5, 0, 0), new Vector3(0, -90, 0))},
+                {"Left", (new Vector3((float)-0.5, 0, 0), new Vector3(0, 90, 0))},
+                {"Forward", (new Vector3(0, 0, (float)0.5), new Vector3(0, -180, 0))},
+                {"Back", (new Vector3(0, 0, (float)-0.5), new Vector3(0, 0, 0))},
+            };
+
+            string direction;
+            Vector3Int delta = current - prev;
+            if (delta.y != 0) // stairs
+            {
+                int xDir = Mathf.Clamp(delta.x, -1, 1);
+                int zDir = Mathf.Clamp(delta.z, -1, 1);
+                Vector3Int verticalOffset = new Vector3Int(0, delta.y, 0);
+                Vector3Int horizontalOffset = new Vector3Int(xDir, 0, zDir);
+
+                delta = (prev + horizontalOffset) - prev;
+                direction = directions[delta];
+                EliminateQuad(prev, direction, "Interior");
+                EliminateQuad(prev, direction, "Exterior");
+                EliminateQuad(prev + horizontalOffset, opositeDirection[direction], "Interior");
+                EliminateQuad(prev + horizontalOffset, opositeDirection[direction], "Exterior");
+
+                delta = (prev + verticalOffset + horizontalOffset * 2) - current;
+                direction = directions[delta];
+                EliminateQuad(current, direction, "Interior");
+                EliminateQuad(current, direction, "Exterior");
+                EliminateQuad(prev + verticalOffset + horizontalOffset * 2, opositeDirection[direction], "Interior");
+                EliminateQuad(prev + verticalOffset + horizontalOffset * 2, opositeDirection[direction], "Exterior");
+
+                return;
+            }
+
+            direction = directions[delta];
+            EliminateQuad(prev, direction, "Interior");
+            EliminateQuad(prev, direction, "Exterior");
+            EliminateQuad(current, opositeDirection[direction], "Interior");
+            EliminateQuad(current, opositeDirection[direction], "Exterior");
+
+            if (toggleEntrences == false)
+                return;
+
+            if (grid[current] == grid[prev])
+                return;
+
+            GameObject go = Instantiate(entrencePrefab, prev, Quaternion.identity);
+            go.GetComponent<Transform>().localPosition = prev + positionRotation[direction].Item1;
+            go.GetComponent<Transform>().localRotation = Quaternion.Euler(positionRotation[direction].Item2);
+            objects.Add(go);
+        }
+
         private void RemovePrefabFaces()
         {
             foreach (GameObject firstGameObject in objects)
             {
                 Vector3Int position = Vector3Int.FloorToInt(firstGameObject.transform.position);
-                
                 CheckNeighbours(position, "Right");
                 CheckNeighbours(position, "Left");
                 CheckNeighbours(position, "Forward");
                 CheckNeighbours(position, "Back");
-                CheckNeighbours(position, "Up");
-                CheckNeighbours(position, "Down");
+                if (grid[position] == CellType.Stairs)
+                {
+                    CheckNeighbours(position, "Up");
+                    CheckNeighbours(position, "Down");
+                }
             }
         }
 
