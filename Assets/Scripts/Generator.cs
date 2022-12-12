@@ -1,7 +1,6 @@
 ﻿using Graph;
 using System;
 using System.Collections.Generic;
-using Unity.VisualScripting.Dependencies.Sqlite;
 using UnityEngine;
 using Random = System.Random;
 
@@ -42,7 +41,7 @@ namespace Map
         [SerializeField] private Material roomMaterial;
         [SerializeField] private Material hallwayMaterial;
         [SerializeField] private Material stairsMaterial;
-        [SerializeField] private Material test;
+        [SerializeField] private Material staircaseMaterial;
 
         private void Reset()
         {
@@ -107,6 +106,13 @@ namespace Map
             RemovePrefabFaces();
             CreateEntrances();
             CreateStaircases();
+            TeleportPlayerInside();
+        }
+
+        private void TeleportPlayerInside()
+        {
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            player.transform.position = objects[0].transform.position;
         }
 
         private void CreateGraph()
@@ -446,14 +452,7 @@ namespace Map
 
         private void SetMaterial(GameObject gameObject, Material material)
         {
-            Transform transform = gameObject.transform.GetChild(0); // exterior
-            for (int i = 0; i < transform.childCount; i++)
-            {
-                GameObject child = transform.GetChild(i).gameObject;
-                child.GetComponent<MeshRenderer>().material = material;
-            }
-
-            transform = gameObject.transform.GetChild(1); // interior
+            Transform transform = gameObject.transform;
             for (int i = 0; i < transform.childCount; i++)
             {
                 GameObject child = transform.GetChild(i).gameObject;
@@ -484,10 +483,10 @@ namespace Map
 
             Dictionary<string, (Vector3, Vector3)> positionRotation = new Dictionary<string, (Vector3, Vector3)>()
             {
-                {"Right", (new Vector3(1, 0, 0), new Vector3(0, 90, 0))}, //
+                {"Right", (new Vector3(1, 0, 0), new Vector3(0, 90, 0))},
                 {"Left", (new Vector3(-1, 0, 0), new Vector3(0, -90, 0))},
                 {"Forward", (new Vector3(0, 0, 1), new Vector3(0, 0, 0))},
-                {"Back", (new Vector3(0, 0, -1), new Vector3(0, 180, 0))}, // 180
+                {"Back", (new Vector3(0, 0, -1), new Vector3(0, 180, 0))},
             };
 
             string direction;
@@ -507,8 +506,7 @@ namespace Map
                 staircasePosition = current;
 
             int xDir = Mathf.Clamp(delta.x, -1, 1);
-            int zDir = Mathf.Clamp(delta.z, -1, 1); 
-            Vector3Int verticalOffset = new Vector3Int(0, delta.y, 0); // de eliminat
+            int zDir = Mathf.Clamp(delta.z, -1, 1);
             Vector3Int horizontalOffset = new Vector3Int(xDir, 0, zDir);
 
             delta = (prev + horizontalOffset) - prev;
@@ -568,26 +566,20 @@ namespace Map
 
                 delta = (prev + horizontalOffset) - prev;
                 direction = directions[delta];
-                EliminateQuad(prev, direction, "Interior");
-                EliminateQuad(prev, direction, "Exterior");
-                EliminateQuad(prev + horizontalOffset, opositeDirection[direction], "Interior");
-                EliminateQuad(prev + horizontalOffset, opositeDirection[direction], "Exterior");
+                EliminateQuad(prev, direction);
+                EliminateQuad(prev + horizontalOffset, opositeDirection[direction]);
 
                 delta = (prev + verticalOffset + horizontalOffset * 2) - current;
                 direction = directions[delta];
-                EliminateQuad(current, direction, "Interior");
-                EliminateQuad(current, direction, "Exterior");
-                EliminateQuad(prev + verticalOffset + horizontalOffset * 2, opositeDirection[direction], "Interior");
-                EliminateQuad(prev + verticalOffset + horizontalOffset * 2, opositeDirection[direction], "Exterior");
+                EliminateQuad(current, direction);
+                EliminateQuad(prev + verticalOffset + horizontalOffset * 2, opositeDirection[direction]);
 
                 return;
             }
 
             direction = directions[delta];
-            EliminateQuad(prev, direction, "Interior");
-            EliminateQuad(prev, direction, "Exterior");
-            EliminateQuad(current, opositeDirection[direction], "Interior");
-            EliminateQuad(current, opositeDirection[direction], "Exterior");
+            EliminateQuad(prev, direction);
+            EliminateQuad(current, opositeDirection[direction]);
 
             if (toggleEntrences == false)
                 return;
@@ -642,24 +634,18 @@ namespace Map
 
             if (grid[position] == grid[position + directionSpecifier[direction]])
             {
-                EliminateQuad(position, direction, "Interior");
-                EliminateQuad(position, direction, "Exterior");
-                EliminateQuad(position + directionSpecifier[direction], opositeDirection[direction], "Interior");
-                EliminateQuad(position + directionSpecifier[direction], opositeDirection[direction], "Exterior");
+                EliminateQuad(position, direction);
+                EliminateQuad(position + directionSpecifier[direction], opositeDirection[direction]);
             }
         }
 
-        private void EliminateQuad(Vector3Int position, string tag, string type)
+        private void EliminateQuad(Vector3Int position, string tag)
         {
-            int childIndex = 0;
-            if (type == "Interior")
-                childIndex = 1;
-
             foreach (GameObject gameObject in objects)
             {
                 if (position == Vector3Int.FloorToInt(gameObject.transform.position))
                 {
-                    Transform transform = gameObject.transform.GetChild(childIndex);
+                    Transform transform = gameObject.transform;
                     for (int i = 0; i < transform.childCount; i++)
                     {
                         GameObject child = transform.GetChild(i).gameObject;
