@@ -26,6 +26,7 @@ using Map;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Drawing;
 
 public class DungeonPathfinder3D
 {
@@ -76,7 +77,6 @@ public class DungeonPathfinder3D
     public DungeonPathfinder3D(Vector3Int size)
     {
         grid = new Grid<Node>(size, Vector3Int.zero);
-
         queue = new PriorityQueue<Node, float>();
         closed = new HashSet<Node>();
         stack = new Stack<Vector3Int>();
