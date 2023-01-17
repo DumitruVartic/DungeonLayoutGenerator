@@ -14,11 +14,14 @@ TagManager:
   - Right
   - Up
   - Down
+  - CinemachineTarget
+  - StairsAir
+  - StairsAirEntrance
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - whatIsGround
+  - 
   - Water
   - UI
   - 

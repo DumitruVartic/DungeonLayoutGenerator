@@ -10452,11 +10452,13 @@ MonoBehaviour:
   toggleCubeRoom: 1
   addExtraEdges: 1
   loadInteriorFirst: 0
+  defaultMaterial: 0
   currentUsedPrefab: {fileID: 2525773469057855146, guid: 14122e8c47ffac447820b8512c11b036, type: 3}
-  interiorPrefab: {fileID: 4253326542951445828, guid: 7580068b36cb55c4698f209cbd8aac66, type: 3}
+  interiorPrefab: {fileID: 5327340789542460290, guid: cd6828a9d13bb444f9cc6b8bbf976309, type: 3}
   exteriorPrefab: {fileID: 2525773469057855146, guid: 14122e8c47ffac447820b8512c11b036, type: 3}
-  entrencePrefab: {fileID: 6448667939924623366, guid: 32a7155f24a958941891412ceb757b3a, type: 3}
-  staircasePrefab: {fileID: 1929905727722604406, guid: 51c1fc8882dc270468d84a3f252c442a, type: 3}
+  entrencePrefab: {fileID: 252620916277001072, guid: b02597159819d0c47ada0b08ac41b351, type: 3}
+  staircasePrefab: {fileID: 8205819970725016133, guid: f4aab57742482aa46b9195d30c03fd3f, type: 3}
+  parapetPrefab: {fileID: 7208784688608546525, guid: 7b3eccf11cd84a345a18384218eb3422, type: 3}
   roomMaterial: {fileID: 2100000, guid: 18a9dc806ce5a0145979f1e13a573daf, type: 2}
   hallwayMaterial: {fileID: 2100000, guid: 3cb46ab6bd9a20144a1436fa0f67b917, type: 2}
   stairsMaterial: {fileID: 2100000, guid: dd941168f0c032b47a42d5657de32ef5, type: 2}
@@ -10538,8 +10540,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1232268418}
   m_HandleRect: {fileID: 1232268416}
   m_Direction: 2
-  m_Value: 0
-  m_Size: 1
+  m_Value: 1.0000005
+  m_Size: 0.91896003
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -12994,7 +12996,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: -0.000030517578}
   m_SizeDelta: {x: 0, y: 890}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &2056298405

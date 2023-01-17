@@ -7,7 +7,7 @@ public class ToggleActiveState : MonoBehaviour
 
     private void Start()
     {
-        if (!GameManager.Instance.enableFPS)
+        if (!GameManager.Instance.enableInterior)
         {
             GameObject parent = button.gameObject;
             parent.SetActive(false);

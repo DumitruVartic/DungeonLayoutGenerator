@@ -50,7 +50,7 @@ public class GameManager : MonoBehaviour
     }
 
     bool wasTp = false;
-    private void Update()
+    private void FixedUpdate()
     {
         Scene currentScene = SceneManager.GetActiveScene();
 
@@ -62,12 +62,34 @@ public class GameManager : MonoBehaviour
             if (generatedMap)
             {
                 wasTp = true;
+
                 generatedMap.TeleportPlayerInside();
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
             }
         }
         else if (sceneName == "Playground" && wasTp)
         {
             wasTp = false;
+        }
+
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            Application.Quit();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Tab))
+        {
+            if (Cursor.visible == false)
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
+            else
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
         }
     }
 }

@@ -2,18 +2,15 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.GlobalIllumination;
 using Random = System.Random;
 
 namespace Map
 {
     public class Generator : MonoBehaviour
     {
-        private Generator()
-        {
-        }
+        Generator() { }
 
-        private static Generator instance;
+        static Generator instance;
 
         public static Generator Instance
         {
@@ -28,7 +25,7 @@ namespace Map
             }
         }
 
-        private void Awake()
+        void Awake()
         {
             if (Instance != null)
             {
@@ -40,12 +37,13 @@ namespace Map
             DontDestroyOnLoad(gameObject);
         }
 
-        private enum CellType
+        enum CellType
         {
             None,
             Room,
             Hallway,
-            Stairs
+            Stairs,
+            StairsAir
         }
 
         public enum Alghoritm
@@ -55,27 +53,29 @@ namespace Map
         }
 
         [TextArea(1, 2)] public string seed;
-        [SerializeField] private Vector3Int size;
-        [SerializeField] private Vector3Int roomMaxSize;
-        [SerializeField] private int roomCount;
-        [SerializeField] private int randomSeed;
-        [SerializeField] private double probabilityToSelect;
-        [SerializeField] private int duration;
-        [SerializeField] private Alghoritm alghoritm;
-        [SerializeField] private bool toggleCubeRoom;
+        [SerializeField] Vector3Int size;
+        [SerializeField] Vector3Int roomMaxSize;
+        [SerializeField] int roomCount;
+        [SerializeField] int randomSeed;
+        [SerializeField] double probabilityToSelect;
+        [SerializeField] int duration;
+        [SerializeField] Alghoritm alghoritm;
+        [SerializeField] bool toggleCubeRoom;
         [SerializeField] public bool addExtraEdges;
-        [SerializeField] private bool loadInteriorFirst;
-        [SerializeField] private GameObject currentUsedPrefab;
-        [SerializeField] private GameObject interiorPrefab;
-        [SerializeField] private GameObject exteriorPrefab;
-        [SerializeField] private GameObject entrencePrefab;
-        [SerializeField] private GameObject staircasePrefab;
-        [SerializeField] private Material roomMaterial;
-        [SerializeField] private Material hallwayMaterial;
-        [SerializeField] private Material stairsMaterial;
-        [SerializeField] private Material staircaseMaterial;
+        [SerializeField] bool loadInteriorFirst;
+        [SerializeField] bool defaultMaterial;
+        [SerializeField] GameObject currentUsedPrefab;
+        [SerializeField] GameObject interiorPrefab;
+        [SerializeField] GameObject exteriorPrefab;
+        [SerializeField] GameObject entrencePrefab;
+        [SerializeField] GameObject staircasePrefab;
+        [SerializeField] GameObject parapetPrefab;
+        [SerializeField] Material roomMaterial;
+        [SerializeField] Material hallwayMaterial;
+        [SerializeField] Material stairsMaterial;
+        [SerializeField] Material staircaseMaterial;
 
-        private void Reset()
+        void Reset()
         {
             size = new Vector3Int(20, 3, 20);
             roomMaxSize = new Vector3Int(6, 1, 6);
@@ -90,19 +90,21 @@ namespace Map
             loadInteriorFirst = true;
         }
 
-        private Random random;
-        private Grid<CellType> grid;
-        private Graph.Graph graph;
-        private List<Room> rooms;
-        private List<GameObject> objects;
-        private List<GameObject> interiorObjects;
-        private HashSet<Edge> selectedEdges;
-        private List<List<Vector3Int>> paths;
+        Random random;
+        Grid<CellType> grid;
+        Grid<CellType> additionalGrid;
+        Graph.Graph graph;
+        List<Room> rooms;
+        List<GameObject> objects;
+        List<GameObject> interiorObjects;
+        HashSet<Edge> selectedEdges;
+        List<List<Vector3Int>> paths;
 
-        private void Start()
+        void Start()
         {
             random = new Random(randomSeed);
             grid = new Grid<CellType>(size, Vector3Int.zero);
+            additionalGrid = new Grid<CellType>(size, Vector3Int.zero);
             graph = new Graph.Graph();
             rooms = new List<Room>();
             objects = new List<GameObject>();
@@ -115,7 +117,7 @@ namespace Map
             Generate();
         }
 
-        private void Update()
+        void Update()
         {
             if (Input.GetKey(KeyCode.G) && Input.GetKey(KeyCode.A)) { ViewGridArea(duration); }
             if (Input.GetKey(KeyCode.G) && Input.GetKey(KeyCode.E)) { graph.ViewGraph(duration); }
@@ -123,8 +125,9 @@ namespace Map
             if (Input.GetKey(KeyCode.G) && Input.GetKey(KeyCode.S)) { graph.ViewSelectedEdges(duration); }
         }
 
-        private void Generate()
+        void Generate()
         {
+            defaultMaterial = true;
             PlaceRooms();
             CreateGraph();
             Pathfind();
@@ -139,26 +142,26 @@ namespace Map
             seed = menuData;
             InputSeed();
             grid = new Grid<CellType>(size, Vector3Int.zero);
+            additionalGrid = new Grid<CellType>(size, Vector3Int.zero);
             Generate();
         }
 
         public void InteriorLoading()
         {
-            if (!loadInteriorFirst)
-            {
-                currentUsedPrefab = interiorPrefab;
-                foreach (GameObject item in objects) { Destroy(item); }
-                objects.Clear();
-                objects = new List<GameObject>();
-                ReplacePrefabs();
-            }
+            defaultMaterial = false;
+            currentUsedPrefab = interiorPrefab;
+            foreach (GameObject item in objects) { Destroy(item); }
+            objects.Clear();
+            objects = new List<GameObject>();
+            ReplacePrefabs();
+            CreateStaircases();
             RemovePrefabFaces();
             CreateEntrances();
-            CreateStaircases();
         }
 
         public void ExteriorLoading()
         {
+            defaultMaterial = true;
             foreach (GameObject item in interiorObjects) { Destroy(item); }
             interiorObjects.Clear();
             interiorObjects = new List<GameObject>();
@@ -171,7 +174,7 @@ namespace Map
             ReplacePrefabs();
         }
 
-        private void ReplacePrefabs()
+        void ReplacePrefabs()
         {
             for (int x = 0; x < size.x; x++)
             {
@@ -179,7 +182,7 @@ namespace Map
                 {
                     for (int z = 0; z < size.z; z++)
                     {
-                        if (grid[x, y , z] == CellType.Room)
+                        if (grid[x, y, z] == CellType.Room)
                         {
                             PlaceRoom(new Vector3Int(x, y, z), Vector3Int.one);
                         }
@@ -202,7 +205,7 @@ namespace Map
             player.transform.position = objects[0].transform.position;
         }
 
-        private void CreateGraph()
+        void CreateGraph()
         {
             List<Vertex> vertices = new List<Vertex>();
 
@@ -218,7 +221,7 @@ namespace Map
             graph.CreateGraph(vertices, probabilityToSelect, randomSeed, addExtraEdges, alghoritm);
         }
 
-        private void PlaceRooms()
+        void PlaceRooms()
         {
             for (int i = 0; i < roomCount; i++)
             {
@@ -293,36 +296,37 @@ namespace Map
             roomCount = rooms.Count;
         }
 
-        private void PlaceCube(Vector3Int location, Vector3Int size, string tag, Material material)
+        void PlaceCube(Vector3Int location, Vector3Int size, string tag, Material material)
         {
             GameObject go = Instantiate(currentUsedPrefab, location, Quaternion.identity);
             go.GetComponent<Transform>().localScale = size;
-            SetMaterial(go, material);
+            if (defaultMaterial)
+                SetMaterial(go, material);
             go.tag = tag;
-            go.name = tag + " " + (GameObject.FindGameObjectsWithTag(tag).Length);
+            go.name = tag + " " + GameObject.FindGameObjectsWithTag(tag).Length;
             go.transform.parent = transform;
             objects.Add(go);
         }
 
-        private void PlaceRoom(Vector3Int location, Vector3Int size)
+        void PlaceRoom(Vector3Int location, Vector3Int size)
         {
             PlaceCube(location, size, "Room", roomMaterial);
         }
 
-        private void PlaceHallway(Vector3Int location)
+        void PlaceHallway(Vector3Int location)
         {
             PlaceCube(location, new Vector3Int(1, 1, 1), "Hallway", hallwayMaterial);
         }
 
-        private void PlaceStairs(Vector3Int location)
+        void PlaceStairs(Vector3Int location)
         {
             PlaceCube(location, new Vector3Int(1, 1, 1), "Stairs", stairsMaterial);
         }
 
-        private void Pathfind()
+        void Pathfind()
         {
             DungeonPathfinder3D aStar = new DungeonPathfinder3D(size);
-            
+
             selectedEdges = graph.GetSelectedEdges(); // ?
 
             foreach (var edge in selectedEdges)
@@ -420,15 +424,28 @@ namespace Map
                                 Vector3Int verticalOffset = new Vector3Int(0, delta.y, 0);
                                 Vector3Int horizontalOffset = new Vector3Int(xDir, 0, zDir);
 
-                                grid[prev + horizontalOffset] = CellType.Stairs;
-                                grid[prev + horizontalOffset * 2] = CellType.Stairs;
-                                grid[prev + verticalOffset + horizontalOffset] = CellType.Stairs;
-                                grid[prev + verticalOffset + horizontalOffset * 2] = CellType.Stairs;
+                                List<Vector3Int> stairs = new List<Vector3Int> // stairs position
+                                {
+                                    prev + horizontalOffset,
+                                    prev + horizontalOffset * 2,
+                                    prev + verticalOffset + horizontalOffset,
+                                    prev + verticalOffset + horizontalOffset * 2
+                                };
 
-                                PlaceStairs(prev + horizontalOffset);
-                                PlaceStairs(prev + horizontalOffset * 2);
-                                PlaceStairs(prev + verticalOffset + horizontalOffset);
-                                PlaceStairs(prev + verticalOffset + horizontalOffset * 2);
+                                Vector3Int max;
+                                if (current.y > prev.y)
+                                    max = current;
+                                else
+                                    max = prev;
+
+                                additionalGrid[max] = CellType.StairsAir;
+                                foreach (var item in stairs)
+                                {
+                                    if (item.y == max.y)
+                                        additionalGrid[item] = CellType.StairsAir;
+                                    PlaceStairs(item);
+                                    grid[item] = CellType.Stairs;
+                                }
                             }
 
                             Debug.DrawLine(prev + new Vector3(0.5f, 0.5f, 0.5f), current + new Vector3(0.5f, 0.5f, 0.5f), Color.blue, duration, false);
@@ -437,7 +454,7 @@ namespace Map
 
                     foreach (var pos in path)
                     {
-                        if (grid[pos] == CellType.Hallway && isEmpty(pos))
+                        if (grid[pos] == CellType.Hallway && IsEmpty(pos))
                         {
                             PlaceHallway(pos);
                         }
@@ -447,7 +464,7 @@ namespace Map
             }
         }
 
-        private bool isEmpty(Vector3Int position)
+        bool IsEmpty(Vector3Int position)
         {
             foreach (var gameObject in objects)
                 if (gameObject.transform.position == position)
@@ -455,7 +472,7 @@ namespace Map
             return true;
         }
 
-        private void ResetData()
+        void ResetData()
         {
             rooms.Clear();
             rooms = new List<Room>();
@@ -479,7 +496,7 @@ namespace Map
             paths = new List<List<Vector3Int>>();
         }
 
-        private void InputSeed()
+        void InputSeed()
         {
             string valid = "SXSYSZRXRYRZRPARS";
             bool found = false;
@@ -513,14 +530,6 @@ namespace Map
             }
         }
 
-        private void OutputSeed()
-        {
-            seed =
-                "SX" + size.x + "SY" + size.y + "SZ" + size.z +
-                "RX" + roomMaxSize.x + "RY" + roomMaxSize.y + "RZ" + roomMaxSize.z +
-                "R" + roomCount + "A" + Convert.ToInt32(alghoritm) + "P" + probabilityToSelect + "RS" + randomSeed;
-        }
-
         private static IEnumerable<string> SplitAlpha(string seed)
         {
             var words = new List<string> { string.Empty };
@@ -535,7 +544,7 @@ namespace Map
             return words;
         }
 
-        private void SetMaterial(GameObject gameObject, Material material)
+        void SetMaterial(GameObject gameObject, Material material)
         {
             if (!toggleCubeRoom)
             {
@@ -550,7 +559,7 @@ namespace Map
             }
         }
 
-        private void CreateStaircases()
+        void CreateStaircases()
         {
             foreach (var path in paths)
             {
@@ -561,7 +570,7 @@ namespace Map
             }
         }
 
-        private void SetStaircaseByRotation(Vector3Int current, Vector3Int prev)
+        void SetStaircaseByRotation(Vector3Int current, Vector3Int prev)
         {
             Dictionary<Vector3Int, string> directions = new Dictionary<Vector3Int, string>()
             {
@@ -609,7 +618,7 @@ namespace Map
             interiorObjects.Add(go);
         }
 
-        private void CreateEntrances()
+        void CreateEntrances()
         {
             foreach (var path in paths)
             {
@@ -620,7 +629,7 @@ namespace Map
             }
         }
 
-        private void ReplaceEntrence(Vector3Int current, Vector3Int prev)
+        void ReplaceEntrence(Vector3Int current, Vector3Int prev)
         {
             Dictionary<Vector3Int, string> directions = new Dictionary<Vector3Int, string>()
             {
@@ -672,11 +681,12 @@ namespace Map
             EliminateQuad(prev, direction);
             EliminateQuad(current, opositeDirection[direction]);
 
-            if (!loadInteriorFirst)
-                return;
-
             if (grid[current] == grid[prev])
                 return;
+
+            foreach (var item in interiorObjects)
+                if (item.GetComponent<Transform>().position == prev + positionRotation[direction].Item1)
+                    return;
 
             GameObject go = Instantiate(entrencePrefab, prev, Quaternion.identity);
             go.GetComponent<Transform>().localPosition = prev + positionRotation[direction].Item1;
@@ -685,7 +695,7 @@ namespace Map
             interiorObjects.Add(go);
         }
 
-        private void RemovePrefabFaces()
+        void RemovePrefabFaces()
         {
             foreach (GameObject firstGameObject in objects)
             {
@@ -702,7 +712,7 @@ namespace Map
             }
         }
 
-        private void CheckNeighbours(Vector3Int position, string direction)
+        void CheckNeighbours(Vector3Int position, string direction)
         {
             Dictionary<string, Vector3Int> directionSpecifier = new Dictionary<string, Vector3Int>()
             {
@@ -737,9 +747,15 @@ namespace Map
                 EliminateQuad(position, direction);
                 EliminateQuad(position + directionSpecifier[direction], opositeDirection[direction]);
             }
+            else if (grid[position] == CellType.Stairs && grid[position + directionSpecifier[direction]] == CellType.Hallway && direction != "Up" && direction != "Down")
+            {
+                EliminateQuad(position, direction);
+                EliminateQuad(position + directionSpecifier[direction], opositeDirection[direction]);
+                CreateParapet(position, direction);
+            }
         }
 
-        private void EliminateQuad(Vector3Int position, string tag)
+        void EliminateQuad(Vector3Int position, string tag)
         {
             foreach (GameObject gameObject in objects)
             {
@@ -751,6 +767,11 @@ namespace Map
                         GameObject child = transform.GetChild(i).gameObject;
                         if (child.CompareTag(tag))
                         {
+                            foreach (var item in interiorObjects)
+                            {
+                                if (child.transform.position == item.transform.position)
+                                    Destroy(item);
+                            }
                             Destroy(child);
                             return;
                         }
@@ -758,7 +779,41 @@ namespace Map
                 }
             }
         }
-        
+
+        void CreateParapet(Vector3Int position, string tag)
+        {
+            Dictionary<string, (Vector3, Vector3)> positionRotation = new Dictionary<string, (Vector3, Vector3)>()
+            {
+                {"Right", (new Vector3((float)0.5, 0, 0), new Vector3(0, -90, 0))},
+                {"Left", (new Vector3((float)-0.5, 0, 0), new Vector3(0, 90, 0))},
+                {"Forward", (new Vector3(0, 0, (float)0.5), new Vector3(0, -180, 0))},
+                {"Back", (new Vector3(0, 0, (float)-0.5), new Vector3(0, 0, 0))},
+            };
+
+            foreach (GameObject gameObject in objects)
+            {
+                if (position == Vector3Int.FloorToInt(gameObject.transform.position))
+                {
+                    if (additionalGrid[position] != CellType.StairsAir)
+                        return;
+
+                    Transform transform = gameObject.transform;
+                    for (int i = 0; i < transform.childCount; i++)
+                    {
+                        GameObject child = transform.GetChild(i).gameObject;
+                        if (child.CompareTag(tag))
+                        {
+                            GameObject go = Instantiate(parapetPrefab, child.transform.position, Quaternion.identity);
+                            go.GetComponent<Transform>().localRotation = Quaternion.Euler(positionRotation[tag].Item2);
+                            go.transform.parent = transform;
+                            interiorObjects.Add(go);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
         public void ViewGridArea(int duration)
         {
             Debug.DrawLine(new Vector3Int(0, 0, 0), new Vector3Int(size.x, 0, 0), Color.white, duration);
